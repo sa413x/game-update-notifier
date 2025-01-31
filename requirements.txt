@@ -1,0 +1,14 @@
+steam==1.4.4
+protobuf==3.20.3
+gevent==24.10.3
+gevent-eventemitter==2.1
+google-api-python-client==2.149.0
+loguru==0.7.2
+python-telegram-bot==21.6
+python-dotenv==1.0.1
+pydantic==2.10.6
+pydantic_settings==2.7.1
+aiohttp==3.11.11
+async_lru==2.0.4
+cachetools==5.5.0
+aiocache==0.12.3
