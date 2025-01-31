@@ -6,7 +6,7 @@ from loguru import logger
 from asyncio import gather
 
 from notifiers import NotifierInterface
-from notifiers import TelegramNotifier
+from notifiers import TelegramNotifier, DiscordNotifier
 
 from utils import LogHandler
 from utils import ConfigManager
@@ -21,6 +21,9 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     telegram_token: str
     telegram_chat_id: str
+
+    discord_channel_webhook: str
+
     steam_ids: str
     hoyoplay_ids: str
 
@@ -30,8 +33,8 @@ class Settings(BaseSettings):
 
 
 class GameUpdateNotifier:
-    def __init__(self, notifier: NotifierInterface, games: List[PlatformGameInterface]) -> None:
-        self._notifier = notifier
+    def __init__(self, notifiers: List[NotifierInterface], games: List[PlatformGameInterface]) -> None:
+        self._notifiers = notifiers
         self._games = games
         self._config = ConfigManager.load()
 
@@ -74,7 +77,10 @@ class GameUpdateNotifier:
                 logger.success(
                     f"[{game.get_platform_name()}] {game.get_name()} updated"
                 )
-                await self._notifier.fire(game)
+
+                for notifier in self._notifiers:
+                    await notifier.fire(game)
+
                 return True
             else:
                 logger.info(
@@ -127,10 +133,25 @@ async def main():
         for game_id in ids
     ]
 
-    game_update_checker = GameUpdateNotifier(
-        TelegramNotifier(settings.telegram_token,
-                         settings.telegram_chat_id), game_list
-    )
+    notifiers = []
+    if settings.telegram_token and settings.telegram_chat_id:
+        logger.success("Telegram notifier enabled")
+        notifiers.append(
+            TelegramNotifier(settings.telegram_token,
+                             settings.telegram_chat_id)
+        )
+    else:
+        logger.warning("Telegram notifier disabled")
+
+    if settings.discord_channel_webhook:
+        logger.success("Discord notifier enabled")
+        notifiers.append(
+            DiscordNotifier(settings.discord_channel_webhook)
+        )
+    else:
+        logger.warning("Discord notifier disabled")
+
+    game_update_checker = GameUpdateNotifier(notifiers, game_list)
 
     while True:
         await game_update_checker.run()
