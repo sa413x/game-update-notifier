@@ -78,9 +78,7 @@ class GameUpdateNotifier:
                     f"[{game.get_platform_name()}] {game.get_name()} updated"
                 )
 
-                for notifier in self._notifiers:
-                    await notifier.fire(game)
-
+                await gather(*(notifier.fire(game) for notifier in self._notifiers))
                 return True
             else:
                 logger.info(
